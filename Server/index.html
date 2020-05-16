@@ -1,0 +1,52 @@
+<html>
+
+<body>
+
+    <ul style="display: flex; flex-direction: column; list-style-type: none;">
+            <li></li>
+    </ul>
+    <div id="message-container"></div>
+    
+        <input type="text" id="message-input">
+        <button type="submit" id="send-button">Send</button>
+ 
+
+</body>
+<script src="https://code.jquery.com/jquery-3.5.0.slim.min.js"
+    integrity="sha256-MlusDLJIP1GRgLrOflUQtshyP0TwT/RHXsI1wWGnQhs=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+
+<script type="text/javascript">
+    var person = prompt("Please enter your name", "Harry Potter");
+    let socket =''; 
+    if (person != null) {        
+        socket = io('http://localhost:3000',{query:'loggeduser='+person});
+    }
+
+    socket.on('chat-message', data => {
+       console.log(data)
+    })
+
+    socket.on('user-connected', users => {
+        let el='';
+        let keys=Object.keys(users);
+            for(let i=0; i<keys.length; i++){
+                el += '<li>'+keys[i]   +'</li>';
+            }
+
+            $('ul').html(el);
+    });
+
+    socket.on('user-disconnected', name => {
+        console.log(name);
+    })
+    $(document).ready(function () {
+        $('button').click(function () {
+            let txt = $('input').val();
+            socket.emit('send-chat-message', txt)
+        });
+    });
+
+</script>
+
+</html>
