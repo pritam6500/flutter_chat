@@ -21,13 +21,6 @@ class ChatWindow extends StatefulWidget {
 
 class _ChatWindow extends State<ChatWindow> {
 
-@override
-  void dispose(){
-    bloc.destroy();
-    super.dispose();
-  }
-
-
   final UserModel friend;
   _ChatWindow(this.friend);
   final inputMessage = new TextEditingController();
@@ -167,25 +160,20 @@ class _ChatWindow extends State<ChatWindow> {
 
   @override
   Widget build(BuildContext context) {
-    final Bloc bloc = GlobalValues.of(context);
+    final Bloc bloc = BlocProvider.of(context);
    bloc.receivedMessage.listen((event) {
       print('starge');
       ChatModel receivedTxt =    ChatModel.fromJson(jsonDecode(event));
 
       if(receivedTxt.senderId == friend.userId){
         chatData.add(receivedTxt);
-        setState((){
+       /* setState((){
           chatData=chatData;
           print(123);
-        });  
+        }); */  
       }
-    }).onDone(() {
-      bloc.destroy();
     });
-
-  
-
-    
+ 
     bloc.socket.listen((event) {
       socket = event;
       print(event);

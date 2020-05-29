@@ -77,6 +77,7 @@ io.on('connection', socket => {
 
   socket.on('privateMessage', message => {
     message = JSON.parse(message);
+    console.log(message)
     io.to(message.to).emit('privateMessage', JSON.stringify(message));
   });
 

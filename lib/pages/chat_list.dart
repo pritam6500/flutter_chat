@@ -63,8 +63,7 @@ class _ChatState extends State<Chat> {
 
   @override
   Widget build(BuildContext context) {
-   final Bloc bloc = GlobalValues.of(context);  
-
+  final Bloc bloc = BlocProvider.of(context);
     return StreamBuilder(
       stream: bloc.friends,
       builder: (context, snapshot){

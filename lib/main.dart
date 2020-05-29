@@ -4,6 +4,7 @@ import 'package:chat/whatsapp_home.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:global_configuration/global_configuration.dart';
+import 'bloc.dart';
 import 'common.dart';
 import 'db/db.dart';
 import 'globals.dart' as globals;
@@ -17,7 +18,8 @@ void main() async{
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return GlobalValues(
+    return BlocProvider(
+      bloc: Bloc(),
           child: new MaterialApp(
         title: "WhatsApp",
         theme: new ThemeData(

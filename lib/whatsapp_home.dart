@@ -24,10 +24,7 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
   IO.Socket socket;
   UserModel currentUser;
   List<UserModel> friends = [];
-  
-
-  
-  
+    
   
   @override
   void initState() {
@@ -87,7 +84,7 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
 
   @override
   Widget build(BuildContext context) {
-    bloc = GlobalValues.of(context);
+    bloc = BlocProvider.of(context);
     return new Scaffold(
         appBar: new AppBar(
           title: new Text("WhatsApp"),
