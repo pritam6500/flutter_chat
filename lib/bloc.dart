@@ -29,7 +29,7 @@ class Bloc extends BlocBase {
   @override
   void dispose() {
     _friends.close();
-    _socket.close();
+   // _socket.close();
     _text1.close();
   }
 }

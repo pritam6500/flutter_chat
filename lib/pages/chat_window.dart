@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:chat/db/db.dart';
 import 'package:chat/models/user_model.dart';
 import 'package:flutter/material.dart';
@@ -20,15 +19,28 @@ class ChatWindow extends StatefulWidget {
 }
 
 class _ChatWindow extends State<ChatWindow> {
-
   final UserModel friend;
   _ChatWindow(this.friend);
   final inputMessage = new TextEditingController();
   List<ChatModel> chatData = [];
   ScrollController _scrollController = new ScrollController();
   IO.Socket socket;
-  UserModel currentUser= globals.currentUser;
-  void _sendMyMessage() {
+  UserModel currentUser = globals.currentUser;
+  Bloc bloc;
+  List<ChatModel> chats = [];
+   
+  void initState() {
+    super.initState();
+    loadPreviousChats();
+  } 
+
+  void loadPreviousChats(){
+      DBProvider.db.getChats(friend.userId.toString()).then((chats) {
+        chats.addAll(chats);  
+      });
+  }
+
+  void _sendMyMessage() async {
     final String text = inputMessage.text;
     if (text.isNotEmpty) {
       final messageText = new ChatModel(
@@ -41,33 +53,36 @@ class _ChatWindow extends State<ChatWindow> {
           isSent: 0,
           isReceived: 0);
 
-    //  if (friend.socketId != null) {
-        var payload = {
-          "text": text,
-          "to": friend.socketId,
-          "from": currentUser.socketId,
-          "senderId": currentUser.userId,
-          "receiverId": friend.userId
-        };
-        socket.emitWithAck('privateMessage', jsonEncode(payload) , ack: (data) {
-         messageText.isSent=1;
-          DBProvider.db.addChat(messageText).then((data) {
-            if (data != null) {
-            } else {}
-          });
-        });
-     // }
+      var payload = {
+        "text": text,
+        "to": friend.socketId,
+        "from": currentUser.socketId,
+        "senderId": currentUser.userId,
+        "receiverId": friend.userId
+      };
 
-      inputMessage.text = '';
-      _scrollController.animateTo(
+      var savedData = await DBProvider.db.addChat(messageText);
+      if (savedData != null) {
+        inputMessage.text = '';
+        bloc.setText(jsonEncode(payload));
+        if (friend.socketId != null && socket != null) {
+          socket.emit('privateMessage', jsonEncode(payload));
+          print(savedData);
+          print(123);
+        }
+      }else{
+          print('something wrong..need error handling');
+      }
+
+      /* _scrollController.animateTo(
         _scrollController.offset + 300,
         curve: Curves.easeOut,
         duration: const Duration(milliseconds: 300),
-      );
+      ); */
     }
   }
 
-  _buildMessageComposer() {
+  Widget  _buildMessageComposer() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.0),
       height: 70.0,
@@ -100,7 +115,7 @@ class _ChatWindow extends State<ChatWindow> {
     );
   }
 
-  _buildMessage(ChatModel chat) {
+  Widget _buildMessage(ChatModel chat) {
     final bool isMe = currentUser.userId == chat.senderId;
     final backColor = isMe ? Theme.of(context).primaryColorLight : Colors.white;
     return Column(
@@ -158,34 +173,58 @@ class _ChatWindow extends State<ChatWindow> {
     );
   }
 
+  Widget _chatWrapper() {
+    return ClipRRect(
+      borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+      child: StreamBuilder(
+          stream: bloc.receivedMessage,
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            if (snapshot.hasData) {
+              ChatModel chat = ChatModel.fromJson(jsonDecode(snapshot.data));
+              chats.add(chat);
+              return ListView.builder(
+                  itemCount: chats.length,
+                  itemBuilder: (context, index) {
+                    return _buildMessage(chats[index]);
+                  });
+            } else {
+              return Container();
+            }
+          }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Bloc bloc = BlocProvider.of(context);
-   bloc.receivedMessage.listen((event) {
-      print('starge');
-      ChatModel receivedTxt =    ChatModel.fromJson(jsonDecode(event));
-
-      if(receivedTxt.senderId == friend.userId){
-        chatData.add(receivedTxt);
-       /* setState((){
-          chatData=chatData;
-          print(123);
-        }); */  
-      }
-    });
- 
+    bloc = BlocProvider.of<Bloc>(context);
     bloc.socket.listen((event) {
       socket = event;
-      print(event);
     });
-
-    
 
     return new Scaffold(
         backgroundColor: Theme.of(context).primaryColor,
         appBar: AppBar(
-          title: new Text(friend.name),
-          elevation: 0.0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          titleSpacing: 0,
+          title: ListTile(
+            contentPadding: EdgeInsets.all(0),
+            leading: CircleAvatar(
+              // backgroundImage: NetworkImage(conversation.image),
+              backgroundColor: Colors.red,
+            ),
+            title: Text(
+              friend.name,
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+            subtitle: Text(
+              friend.socketId != null ? 'Online' : '',
+              style: TextStyle(color: Colors.white.withOpacity(.7)),
+            ),
+          ),
           actions: <Widget>[
             new Icon(Icons.videocam),
             new Padding(padding: const EdgeInsets.symmetric(horizontal: 6)),
@@ -205,19 +244,7 @@ class _ChatWindow extends State<ChatWindow> {
                         topLeft: Radius.circular(30),
                         topRight: Radius.circular(30)),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30)),
-                    child: ListView.builder(
-                        reverse: false,
-                        controller: _scrollController,
-                        padding: const EdgeInsets.only(top: 15),
-                        itemCount: chatData?.length??0,
-                        itemBuilder: (BuildContext context, int i) {
-                          return _buildMessage(chatData[i]);
-                        }),
-                  ),
+                  child: _chatWrapper(),
                 ),
               ),
               _buildMessageComposer()

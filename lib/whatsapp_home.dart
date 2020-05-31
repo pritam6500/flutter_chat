@@ -51,35 +51,26 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
             currentUser.userId.toString(),
         <String, dynamic>{
           'transports': ['websocket'],
-          'autoConnect': false,
+          'autoConnect': true,
         });
-    socket.connect();
+   // socket.connect();
+   // socket.io..disconnect()..connect(); 
     socket.on('connect',(_){
         bloc.setSocket(socket);
     });
     socket.on('userConnected', (data) {
       currentUser.socketId = data[currentUser.userId.toString()]['socketId'];
-      friends.map((e) {
-        if (data.containsKey(e.userId.toString())) {
-          e.socketId = data[e.userId.toString()]['socketId'];
-        } else {
-          e.socketId = null;
-        }
-        return e;
-      }).toList();
-       bloc.setFriends(friends);
+      updateFriends(data);
     });
 
     socket.on('disConnected', (data) {
-      print(data.toString());
+      updateFriends(data);
     });
 
     socket.on('privateMessage',(data){
-      print(data);
         bloc.setText(data);
     });
 
-    
   }
 
   @override
@@ -117,5 +108,19 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
             backgroundColor: Theme.of(context).accentColor,
             child: new Icon(Icons.message, color: Colors.white),
             onPressed: () => print("ffe")));
+  }
+
+
+
+  void updateFriends(data){
+    friends.map((e) {
+        if (data.containsKey(e.userId.toString())) {
+          e.socketId = data[e.userId.toString()]['socketId'];
+        } else {
+          e.socketId = null;
+        }
+        return e;
+      }).toList();
+       bloc.setFriends(friends);
   }
 }

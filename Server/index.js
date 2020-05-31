@@ -18,9 +18,9 @@ app.get('/', (req, res) => {
 });
 
 let userLists = [{ "UserId": 1, "userName": "user1", "password": 12345 }, { "UserId": 2, "userName": "user2", "password": 12345 }, { "UserId": 3, "userName": "user3", "password": 12345 }, { "UserId": 4, "userName": "user4", "password": 12345 }, { "UserId": 5, "userName": "user5", "password": 12345 }, { "UserId": 6, "userName": "user6", "password": 12345 }];
+
 app.post('/login', function (req, res) {
   if (req.body.userName) {
-
     let userPresent = userLists.filter((user) => {
       return user.userName == req.body.userName.trim();
     });
@@ -49,15 +49,12 @@ app.get('/test', function (req, res) {
 
 const users = {};
 
-
 io.on('connection', socket => {
-
   var user = {}
   user['userId'] = parseInt(socket.handshake.query.userId);
   user['socketId'] = socket.id;
   user['name'] = user['userId'];
   users[user['userId']] = user;
-
 
   socket.on('checkIfOnline', (friends) => {
     friends = JSON.parse(friends);
@@ -65,36 +62,36 @@ io.on('connection', socket => {
       if (users.hasOwnProperty(friend.userId)) {
         friend.socketId = users[friend.userId].socketId
       } else {
-        friend.socketId = null;     
+        friend.socketId = null;
       }
     });
-    
-    
-
   });
+
   console.log(users);
   io.emit('userConnected', users);
 
   socket.on('privateMessage', message => {
     message = JSON.parse(message);
-    console.log(message)
     io.to(message.to).emit('privateMessage', JSON.stringify(message));
+  });
+
+  socket.on('groupMessage', message => {
+    console.log(message);
   });
 
   socket.on('disconnect', () => {
     let keys = Object.keys(users);
     console.log(socket.id);
-    for(let i=0; i<keys.length; i++){
-        if(users[keys[i]].socketId === socket.id){
+    for (let i = 0; i < keys.length; i++) {
+      if (users[keys[i]].socketId === socket.id) {
         delete users[keys[i]];
         break;
-        }
+      }
     }
     io.emit('disConnected', users);
-   
+
   });
   
-   
 })
 
 
